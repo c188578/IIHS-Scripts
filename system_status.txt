@@ -1,0 +1,87 @@
+#!/bin/bash
+############# Name : system_status.sh ###############
+#################### Version ######################
+# version 0.01 written by Sushant Goswami Dated 25-apr-2018
+# Revision
+# Revision
+# Revision
+# Revision
+######################## Scope ######################
+# The script is intended to check top 5 cpu and memory process, it also monitors the ram utilisation, it is needed to be set by cron
+# example */5 * * * * /opt/system_status.sh
+##################### User Defined Variables #########################
+ZONE=ALL_ZONE
+PRIMARY_EMAIL=goswami_sushant@network.lilly.com
+SECONDARY_EMAIL=karthick_manivannan@network.lilly.com
+PRIMARY_MAIL_ENABLE=1
+SECONDARY_MAIL_ENABLE=1
+WORKDIR=/tmp
+LOGDIR=log
+LOGFILE=system_status.log
+############## Pre Fixed Variables ##############################
+SERVER_NAME=`hostname`
+CURRENTDATE=`date | awk '{print $3"-"$2"-"$6}'`
+CURRENTTIMESTAMP=`date | awk '{print $4}' | sed '$ s/:/./g'`
+CURRENT_HOUR=`date | awk '{print $4}' | awk -F ":" '{print $1$2}'`
+###################### Help Menu ##########################################
+if [ -z $1 ]; then
+ echo "(MSG 000): No arguments passed, continuing to regular task" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-$CURRENTDATE.txt
+else
+ if [ $1 == "-help" ]; then
+  echo "(MSG HELP): The script is intended to check top 5 cpu and memory process, it also monitors the ram utilisation, it is needed to be set by cron"
+  exit 0;
+ fi
+fi
+##########################################################################
+DUPLICATE_INSTANCE=2
+DUPLICATE_INSTANCE=`ps -ef | grep system_status.sh | grep -v grep | wc -l`
+if [ $DUPLICATE_INSTANCE -ge 3 ]; then
+ echo "(MSG 000): Duplicate instance found, .. exiting." | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-$CURRENTDATE.txt
+ exit 0;
+fi
+#################### Do not edit below this line, use variables above ###########################################
+if [ ! -d /$WORKDIR/$LOGDIR ]; then
+mkdir -p /$WORKDIR/$LOGDIR
+fi
+####################
+echo "=================================================================================================================" >> $WORKDIR/$LOGDIR/$LOGFILE-top10cpu-$CURRENTDATE.txt
+echo "(MSG 001): Below top 10 CPU process" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-top10cpu-$CURRENTDATE.txt
+echo "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-top10cpu-$CURRENTDATE.txt
+ps aux | sort -k 3 -rn | head -10 | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-top10cpu-$CURRENTDATE.txt
+
+echo "=================================================================================================================" >> $WORKDIR/$LOGDIR/$LOGFILE-top10mem-$CURRENTDATE.txt
+echo "(MSG 002): Below top 10 MEMORY process" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-top10mem-$CURRENTDATE.txt
+echo "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-top10mem-$CURRENTDATE.txt
+ps aux | sort -k 4 -rn | head -10 | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-top10mem-$CURRENTDATE.txt
+
+echo "=================================================================================================================" >> $WORKDIR/$LOGDIR/$LOGFILE-memstat-$CURRENTDATE.txt
+echo "(MSG 003): Below is free command output" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-memstat-$CURRENTDATE.txt
+free | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-memstat-$CURRENTDATE.txt
+
+echo "=================================================================================================================" >> $WORKDIR/$LOGDIR/$LOGFILE-dstate-$CURRENTDATE.txt
+echo "(MSG 003): Below is the Fetched D state processes" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-dstate-$CURRENTDATE.txt
+ps aux | grep " D " | grep -v grep | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-dstate-$CURRENTDATE.txt
+
+echo "=================================================================================================================" >> $WORKDIR/$LOGDIR/$LOGFILE-vmstat-$CURRENTDATE.txt
+echo "(MSG 004): Below is the Fetched vmstat status" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-vmstat-$CURRENTDATE.txt
+vmstat 1 5 | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-vmstat-$CURRENTDATE.txt
+echo "=================================================================================================================" >> $WORKDIR/$LOGDIR/$LOGFILE-vmstat-$CURRENTDATE.txt
+
+echo "(MSG 005): Below is the io status" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-io-$CURRENTDATE.txt
+iotop -b | head -n 15  | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-io-$CURRENTDATE.txt
+echo "=================================================================================================================" >> $WORKDIR/$LOGDIR/$LOGFILE-io-$CURRENTDATE.txt
+
+echo "(MSG 006): Below is the process count for users" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-process-count-$CURRENTDATE.txt
+ps -elfT | awk '{print $3}'  | sort | uniq -c | awk '{print $2, " ", $1}'  | column -t  | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-process-count-$CURRENTDATE.txt
+echo "=================================================================================================================" >> $WORKDIR/$LOGDIR/$LOGFILE-process-count-$CURRENTDATE.txt
+#################### Mailing report ####################
+if [ $CURRENT_HOUR -gt 2354 ]; then
+if [ $PRIMARY_MAIL_ENABLE == 1 ]; then
+ echo "Performance report on $SERVER_NAME" | mailx -s "Performance report on $SERVER_NAME" -r reporter@$SERVER_NAME.am.lilly.com -a $WORKDIR/$LOGDIR/$LOGFILE-top10cpu-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-top10mem-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-memstat-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-dstate-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-vmstat-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-process-count-$CURRENTDATE.txt $PRIMARY_EMAIL
+fi
+if [ $SECONDARY_MAIL_ENABLE == 1 ]; then
+ echo "Performance report on $SERVER_NAME" | mailx -s "Performance report on $SERVER_NAME" -r reporter@$SERVER_NAME.am.lilly.com -a $WORKDIR/$LOGDIR/$LOGFILE-top10cpu-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-top10mem-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-memstat-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-dstate-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-vmstat-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-process-count-$CURRENTDATE.txt  $SECONDARY_EMAIL
+fi
+rm -rf $WORKDIR/$LOGDIR/$LOGFILE-top10cpu-$CURRENTDATE.txt $WORKDIR/$LOGDIR/$LOGFILE-top10mem-$CURRENTDATE.txt $WORKDIR/$LOGDIR/$LOGFILE-memstat-$CURRENTDATE.txt $WORKDIR/$LOGDIR/$LOGFILE-dstate-$CURRENTDATE.txt $WORKDIR/$LOGDIR/$LOGFILE-vmstat-$CURRENTDATE.txt $WORKDIR/$LOGDIR/$LOGFILE-process-count-$CURRENTDATE.txt $WORKDIR/$LOGDIR/$LOGFILE-io-$CURRENTDATE.txt $WORKDIR/$LOGDIR/$LOGFILE-$CURRENTDATE.txt
+fi
+#################### Do not edit above this line, use variables above in User Defined Variables ###########################################
