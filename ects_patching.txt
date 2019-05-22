@@ -1,0 +1,160 @@
+#!/bin/bash
+#-------------------------------------------------------------------------------
+#- Original Author...: Sushant Goswami
+#- Creation Date.....: 03 July 2018
+#- Purpose...........: Script is intended to patch the ECTS servers	
+#- Notes.............: Creation of script via CHG1290158
+#-------------------------------------------------------------------------------
+#-            (C) Copyright 2018 Eli Lilly and Company
+#-                       All Rights Reserved
+#-------------------------------------------------------------------------------
+# description: ects_patching_script.sh
+#-------------------------------------------------------------------------------                                                                                          
+############### User defines Variables ##############
+
+ECTS_REPO=MDITCurrent
+
+VARDIR=/var
+LOGDIR=logs
+LOGFILE=ects_patching_script.log.txt
+CURRENTDATE=`date | awk '{print $3"-"$2"-"$6"-"$4}'`
+PRIMARY_EMAIL=tcs_platform_linux@lists.lilly.com
+MAIL_ENABLE=1
+
+######################################## Do not edit Below lines ##########################################
+
+CURRENT_REPO=`subscription-manager identity | tail -1 | awk '{print $3}' | cut -d "/" -f 1`
+if [ -z $CURRENT_REPO ]; then
+ echo "Atleast one repo need to connect on the server, please connect the server by option no. 2"
+ read -p "Press [Enter] to contineu"
+fi
+ 
+main_menu()
+{
+clear
+echo "*=======================================================================*";
+echo "*============================= Main Menu ===============================*";
+echo "*=======================================================================*";
+echo " 1. Perform precheks and Display current Repo before OS patching"
+echo " 2. Connect to the correct repository"
+echo " 3. Start OS patching"
+echo " 0. Exit from script"
+echo "*=======================================================================*";
+echo -n "Please choose a word [1,2,3,4 or 0 to exit]? "     
+read choice
+if [ $choice -eq 0 ]; then
+ echo "existing from script..."
+ exit 0
+fi
+if [ $choice -eq 1 ]; then
+ Perform_precheks_before_OS_patching
+fi
+if [ $choice -eq 2 ]; then
+  Connect_to_the_correct_repository 
+fi
+if [ $choice -eq 3 ]; then
+ Start_OS_patching
+else
+ main_menu
+fi  
+}
+
+Perform_precheks_before_OS_patching()
+{
+clear
+echo "*=======================================================================*";
+echo "*=========== Performing precheks before OS patching ====================*";
+echo "*=======================================================================*";
+sleep 1;
+CURRENT_SPACE=`df -Pkl | grep rootlv | awk '{print $3}'`
+if [ $CURRENT_SPACE -lt 512000 ]; then
+ echo "The free space remaining in root fileystem is less in 512MB, please check manually and free up the space."
+ read -p "Press [Enter] to contineu to main menu"
+ main_menu
+fi
+echo "*=======================================================================*";
+echo "*======== Checking the current repository and server configuration =====*";
+echo "*=======================================================================*";
+CURRENT_REPO=`subscription-manager identity | tail -1 | awk '{print $3}' | cut -d "/" -f 1`
+if [ $CURRENT_REPO == $ECTS_REPO ]; then
+ echo "The Repo attached to the server is $CURRENT_REPO, which is correct repo. You can proceed with patching by option no. 3"
+ read -p "Press [Enter] to contineu"
+else 
+ echo "The Server is not subscribed by $ECTS_REPO, it is currently $CURRENT_REPO"
+ echo "You can disconnect the current repo and attach to the $ECTS_REPO repo"
+ echo "Do you want to connect it to the correct $ECTS_REPO"
+ echo -n "Please choose a word [ y or any other key to exit to Main Menu ]? "     
+ read choice
+ if [ $choice == "y" ]; then
+  Connect_to_the_correct_repository
+  read -p "Press [Enter] to contineu"
+  main_menu
+ fi
+ echo "*========================= Going back to Main Menu ====================*";
+ sleep 1
+ main_menu
+fi  
+}                                                      
+
+Connect_to_the_correct_repository()
+{
+CURRENT_REPO=`subscription-manager identity | tail -1 | awk '{print $3}' | cut -d "/" -f 1`
+if [ $CURRENT_REPO == $ECTS_REPO ]; then
+ echo "The Repo attached to the server is $CURRENT_REPO, which is correct repo. You can proceed with patching by option no. 3"
+else 
+ echo "The Server is not subscribed by $ECTS_REPO, it is currently $CURRENT_REPO"
+ echo "Proceed to disconnect the current repo and attach to the $ECTS_REPO repo"
+ echo "Do you want to connect it to the correct $ECTS_REPO"
+ echo -n "Please choose a word [ y or any other key to exit to Main Menu ]?"     
+ read choice
+  if [ $choice == "y" ]; then
+   echo "Connecting to the correct repository"
+   subscription-manager unregister 
+   subscription-manager register --org=Eli_Lilly --activationkey=VIRT-AK,C_RHEL6_SV-MDITCurrent-AK
+   read -p "Press [Enter] to contineu"
+   main_menu
+  fi
+fi 
+CURRENT_REPO=`subscription-manager identity | tail -1 | awk '{print $3}' | cut -d "/" -f 1`
+if [ $CURRENT_REPO == $ECTS_REPO ]; then
+ echo "*=======================================================================*";
+ echo "*======= Current repository is now $ECTS_REPO server configuration =====*";
+ echo "*=======================================================================*";
+else
+ echo "*========================================================================================*";
+ echo "*= Current repository is not $ECTS_REPO server configuration, please check manually =====*";
+ echo "*========================================================================================*"; 
+fi 
+ read -p "Press [Enter] to contineu"
+ main_menu
+}
+
+Start_OS_patching()
+{
+clear
+echo "*=======================================================================*";
+echo "*=========== Performing precheks before OS patching ====================*";
+echo "*=======================================================================*";
+CURRENT_REPO=`subscription-manager identity | tail -1 | awk '{print $3}' | cut -d "/" -f 1`
+if [ $CURRENT_REPO == $ECTS_REPO ]; then
+ echo "*=======================================================================*";
+ echo "The Repo attached to the server is $CURRENT_REPO, which is correct repo."
+ echo "*=======================================================================*";
+ read -p "Press [Enter] to contineu to patch the server with $ECTS_REPO"
+ clear
+ echo "Performing Yum Update"
+ yum --disablerepo=\* --enablerepo=rhel\* check-update
+ yum --disablerepo=\* --enablerepo=rhel\* update
+ read -p "Press [Enter] to contineu"
+ main_menu
+else 
+ echo "The Server is not subscribed by $ECTS_REPO, it is currently $CURRENT_REPO"
+ echo "Go back to main menu and select option number 2 to connect the currect Repo"
+ read -p "Press [Enter] to contineu to Main Menu"
+ main_menu
+fi
+}
+
+sleep 1;
+main_menu
+######################################## Do not edit above lines ##########################################
