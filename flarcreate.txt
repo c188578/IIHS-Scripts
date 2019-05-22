@@ -1,0 +1,188 @@
+#!/bin/bash
+############# Name : flar-create-solaris9.sh ###############
+#-------------------------------------------------------------------------------
+#- Original Author...: Sushant Goswami
+#- Creation Date.....: 25 June 2018
+#- Purpose...........: For taking the FLAR backup for Sun servers
+#- Notes.............: Creation of script via CHG1268601
+#-------------------------------------------------------------------------------
+#-            (C) Copyright 2018 Eli Lilly and Company
+#-                       All Rights Reserved
+#-------------------------------------------------------------------------------
+#################### Version ######################
+# version 0.01 written by Sushant Goswami Dated 17-Aug-2017
+# Revision - version 0.02 written by Sushant Goswami Dated 13-Jun-2018
+# Revision
+# Revision
+# Revision
+######################## Scope ######################
+# The scope of script is to take only OS Flar Backup of XFSN07, XFSN08, YOSN02 and YOSN60#
+######################## Usage ######################
+# The can be run directly or can be setup via cron #
+#####################################################
+
+############### User defines Variables ##############
+
+SERVER1=xfsn08
+SERVER2=xfsn07
+SERVER3=yosn02
+SERVER4=yosn60
+
+DEFINED_NAS_SERVER1=XF2VNX01NFSserver
+DEFINED_NAS_SERVER2=XF2VNX01NFSserver
+DEFINED_NAS_SERVER3=XF2VNX01NFSserver
+DEFINED_NAS_SERVER4=XF2VNX01NFSserver
+
+SERVER1_TOTAL_FILE=0
+SERVER2_TOTAL_FILE=0
+SERVER3_TOTAL_FILE=0
+SERVER4_TOTAL_FILE=0
+
+WORKDIR=FLARBACKUP
+LOGDIR=logs
+IMAGE_DIR=images
+LOGFILE=flarbackup.log
+CURRENTDATE=`date | awk '{print $3"-"$2"-"$6"-"$4}'`
+PRIMARY_EMAIL=tcs_platform_linux@lists.lilly.com
+MAIL_ENABLE=1
+
+######################################## Do not edit Below lines ##########################################
+CURRENTHOST=`uname -n`
+if [ $CURRENTHOST == "xfsn08" ]; then
+SERVER1_TOTAL_FILE=`ls -l /$WORKDIR/$IMAGE_DIR/$SERVER1-* | wc -l`
+NASSERVER=`df -h /$WORKDIR | grep $DEFINED_NAS_SERVER1 | cut -d "." -f 1`
+fi
+if [ $CURRENTHOST == "xfsn07" ]; then
+SERVER2_TOTAL_FILE=`ls -l /$WORKDIR/$IMAGE_DIR/$SERVER2-* | wc -l`
+NASSERVER=`df -h /$WORKDIR | grep $DEFINED_NAS_SERVER2 | cut -d "." -f 1`
+fi
+if [ $CURRENTHOST == "yosn02" ]; then
+SERVER3_TOTAL_FILE=`ls -l /$WORKDIR/$IMAGE_DIR/$SERVER3-* | wc -l`
+NASSERVER=`df -h /$WORKDIR | grep $DEFINED_NAS_SERVER3 | cut -d "." -f 1`
+fi
+if [ $CURRENTHOST == "yosn60" ]; then
+SERVER4_TOTAL_FILE=`ls -l /$WORKDIR/$IMAGE_DIR/$SERVER4-* | wc -l`
+NASSERVER=`df -h /$WORKDIR | grep $DEFINED_NAS_SERVER4 | cut -d "." -f 1`
+fi
+
+FLAR_FAIL=0
+REMOVE_FLAG=0
+CREATE_SUCCESS=0
+
+mail_send()
+{
+########################################## Error Reporting by Email ########################################
+if [ $MAIL_ENABLE == 1 ] && [ $FLAR_FAIL == 1 ]; then
+ echo "Flar is not creating for $CURRENTHOST, please check manually" | mailx -s "(MSG Mail01) Alert on $CURRENTHOST server Flarbackup" $PRIMARY_EMAIL
+fi
+if [ $FLAR_FAIL == 1 ]; then
+ echo " (MSG 001): Flar is not creating for $CURRENTHOST, please check manually" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> /$WORKDIR/$LOGDIR/$LOGFILE
+ exit 0;
+fi
+if [ $MAIL_ENABLE == 1 ] && [ $CREATE_SUCCESS == 1 ]; then
+ echo "Flar creation command is executed for $CURRENTHOST, please check the logs for success." | mailx -s "(MSG Mail02) Alert on $CURRENTHOST server Flarbackup" $PRIMARY_EMAIL
+fi
+if [ $CREATE_SUCCESS == 1 ]; then
+ echo " (MSG 002): Flar is created for $CURRENTHOST, please check manually if required" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> /$WORKDIR/$LOGDIR/$LOGFILE
+fi
+##################################### End of Error Reporting by Email #######################################
+}
+
+######################### NAS server verification #############################
+if [ -z $NASSERVER ]; then
+ echo "(MSG 003): The found NAS server is null or incorrect, can not proceeding further." | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> /$WORKDIR/$LOGDIR/$LOGFILE
+ FLAR_FAIL=1
+ mail_send
+fi
+######################### End of NAS server verification #############################
+
+##################################### Removing old backups ############################################
+if [ -d /$WORKDIR/$IMAGE_DIR ] && [ $SERVER1_TOTAL_FILE -gt 3 ] && [ $CURRENTHOST == $SERVER1 ]; then
+ NUM=`ls -lth /$WORKDIR/$IMAGE_DIR/$SERVER1-* | wc -l`
+  if [ $NUM -gt 3 ]; then
+        FILES=`ls -lth /$WORKDIR/$IMAGE_DIR/$SERVER1-* | sed 1,3d | awk '{print $NF}' | xargs`
+        if [ -n $FILES ]; then
+         echo "(MSG 004): Following files $FILES are found as old backup, removing more than 3." | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> /$WORKDIR/$LOGDIR/$LOGFILE
+        fi
+        cd /$WORKDIR/$IMAGE_DIR
+        rm $FILES
+        SERVER1_TOTAL_FILE=`ls -l /$WORKDIR/$IMAGE_DIR/$SERVER1-* | wc -l`
+  fi
+fi
+if [ -d /$WORKDIR/$IMAGE_DIR ] && [ $SERVER2_TOTAL_FILE -gt 3 ] && [ $CURRENTHOST == $SERVER2 ]; then
+ NUM=`ls -lth /$WORKDIR/$IMAGE_DIR/$SERVER2-* | wc -l`
+  if [ $NUM -gt 3 ]; then
+        FILES=`ls -lth /$WORKDIR/$IMAGE_DIR/$SERVER2-* | sed 1,3d | awk '{print $NF}' | xargs`
+        if [ -n $FILES ]; then
+         echo "(MSG 004): Following files $FILES are found as old backup, removing more than 3." | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> /$WORKDIR/$LOGDIR/$LOGFILE
+        fi
+        cd /$WORKDIR/$IMAGE_DIR
+        rm $FILES
+        SERVER2_TOTAL_FILE=`ls -l /$WORKDIR/$IMAGE_DIR/$SERVER2-* | wc -l`
+  fi
+fi
+if [ -d /$WORKDIR/$IMAGE_DIR ] && [ $SERVER3_TOTAL_FILE -gt 3 ] && [ $CURRENTHOST == $SERVER3 ]; then
+ NUM=`ls -lth /$WORKDIR/$IMAGE_DIR/$SERVER2-* | wc -l`
+  if [ $NUM -gt 3 ]; then
+        FILES=`ls -lth /$WORKDIR/$IMAGE_DIR/$SERVER3-* | sed 1,3d | awk '{print $NF}' | xargs`
+        if [ -n $FILES ]; then
+         echo "(MSG 004): Following files $FILES are found as old backup, removing more than 3." | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> /$WORKDIR/$LOGDIR/$LOGFILE
+        fi
+        cd /$WORKDIR/$IMAGE_DIR
+        rm $FILES
+        SERVER2_TOTAL_FILE=`ls -l /$WORKDIR/$IMAGE_DIR/$SERVER3-* | wc -l`
+  fi
+fi
+if [ -d /$WORKDIR/$IMAGE_DIR ] && [ $SERVER4_TOTAL_FILE -gt 3 ] && [ $CURRENTHOST == $SERVER4 ]; then
+ NUM=`ls -lth /$WORKDIR/$IMAGE_DIR/$SERVER2-* | wc -l`
+  if [ $NUM -gt 3 ]; then
+        FILES=`ls -lth /$WORKDIR/$IMAGE_DIR/$SERVER4-* | sed 1,3d | awk '{print $NF}' | xargs`
+        if [ -n $FILES ]; then
+         echo "(MSG 004): Following files $FILES are found as old backup, removing more than 3." | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> /$WORKDIR/$LOGDIR/$LOGFILE
+        fi
+        cd /$WORKDIR/$IMAGE_DIR
+        rm $FILES
+        SERVER2_TOTAL_FILE=`ls -l /$WORKDIR/$IMAGE_DIR/$SERVER4-* | wc -l`
+  fi
+fi
+##################################### End of Removing old backups #####################################
+
+###################################### Flar method #########################################
+###################################### For SERVER1 #########################################
+if [ $SERVER1_TOTAL_FILE -lt 4 ]; then
+ if [ $CURRENTHOST == $SERVER1 ]; then
+  echo "(MSG 005): Taking FLAR backup of $CURRENTHOST" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> /$WORKDIR/$LOGDIR/$LOGFILE
+  flarcreate -n $CURRENTHOST-$CURRENTDATE -x /archive -x /software -x /data -x /appdata/mvb -x /appdata/floprd -x /appdata/gieprd -x /var/mqm -x /appdata/mmb -x /oracle_xf_exports -x /$WORKDIR /$WORKDIR/$IMAGE_DIR/xfsn08-$CURRENTDATE.flar | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> /$WORKDIR/$LOGDIR/$LOGFILE
+  CREATE_SUCCESS=1
+  mail_send
+ fi
+fi
+###################################### For SERVER2 #########################################
+if [ $SERVER2_TOTAL_FILE -lt 4 ]; then
+ if [ $CURRENTHOST == $SERVER2 ]; then
+  echo "(MSG 005): Taking FLAR backup of $CURRENTHOST" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> /$WORKDIR/$LOGDIR/$LOGFILE
+  flarcreate -n $CURRENTHOST-$CURRENTDATE  -x /logs-01 -x /arch-01 -x /logs2-01 -x /data3-01 -x /data1-01 -x /data2-01 -x /rollbacks-01 -x /$WORKDIR -x /archive -x /exports -x /data -x /software/oracle/backups/xfsn07.ema.lilly.com -x /software -x /var/mqm /$WORKDIR/$IMAGE_DIR/$CURRENTHOST-$CURRENTDATE.flar | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> /$WORKDIR/$LOGDIR/$LOGFILE
+  CREATE_SUCCESS=1
+  mail_send
+ fi
+fi
+###################################### For SERVER3 #########################################
+if [ $SERVER3_TOTAL_FILE -lt 4 ]; then
+ if [ $CURRENTHOST == $SERVER3 ]; then
+  echo "(MSG 005): Taking FLAR backup of $CURRENTHOST" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> /$WORKDIR/$LOGDIR/$LOGFILE
+  flarcreate -n $CURRENTHOST-$CURRENTDATE -x /data1 -x /archivelogs -x /logs -x /data -x /rollbacks -x /backup -x /software -x /opt/netiq -x /opt/IBMHTTPD -x /opt/telalert -x /opt/ISG/logs /$WORKDIR/$IMAGE_DIR/$CURRENTHOST-$CURRENTDATE.flar | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> /$WORKDIR/$LOGDIR/$LOGFILE
+  CREATE_SUCCESS=1
+  mail_send
+ fi
+fi
+###################################### For SERVER4 #########################################
+if [ $SERVER4_TOTAL_FILE -lt 4 ]; then
+ if [ $CURRENTHOST == $SERVER4 ]; then
+  echo "(MSG 005): Taking FLAR backup of $CURRENTHOST" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> /$WORKDIR/$LOGDIR/$LOGFILE
+  flarcreate -n $CURRENTHOST-$CURRENTDATE -x /dml -x /jumpstart -x /unixops -x /dml/sftrps -x /opt/netiq -x /net/z2-unixops.ema.lilly.com /$WORKDIR/$IMAGE_DIR/$CURRENTHOST-$CURRENTDATE.flar | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> /$WORKDIR/$LOGDIR/$LOGFILE
+  CREATE_SUCCESS=1
+  mail_send
+ fi
+fi
+###################################### End of Flar method #########################################
+
