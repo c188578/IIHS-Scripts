@@ -1,0 +1,192 @@
+#!/bin/bash
+############# Name : automation_var.sh ###############
+############# Name : Automation of Var FS cleanup/maintinence ###############
+#################### Version 0.1 ######################
+# version 0.01 written by Sushant Goswami Dated 7-July-2021
+# Revision
+# Revision
+# Revision
+
+######################## Scope ######################
+# The script is intended to check the highly utilization of /var filesystem
+# 
+######################## Scope ######################
+
+##################### User Defined Variables #########################
+ZONE=ALL
+PRIMARY_EMAIL=Tcs_Platform_Linux@lists.lilly.com
+SECONDARY_EMAIL=goswami_sushant@network.lilly.com
+PRIMARY_MAIL_ENABLE=0
+SECONDARY_MAIL_ENABLE=1
+SECONDARY_MOUNT_DIR=/tmp/secondary_var
+TMPDIR=/tmp/automation_var
+WORKDIR=work
+LOGDIR=log
+LOGFILE=Automation_var.log
+############## Pre Fixed Variables ##############################
+CURRENTDATE=`date | awk '{print $3"-"$2"-"$6}'`
+CURRENTTIMESTAMP=`date | awk '{print $4}' | sed '$ s/:/./g'`
+CURRENT_HOUR=`date | awk '{print $4}' | cut -d ":" -f 1`
+
+#################### Do not edit below this line, use variables above ###########################################
+###------------------------------------------------------------------------------------------------------------###
+
+####################### Pre task ####################################
+################### TMPFS creation and removal ########################
+if [ ! -d $TMPDIR ]; then
+ mkdir $TMPDIR
+fi 
+mount -t tmpfs -o size=10M tmpfs $TMPDIR
+mkdir $TMPDIR/$WORKDIR $TMPDIR/$LOGDIR 
+tmpfs_removal()
+ {
+  umount $TMPDIR
+ }
+if [ ! -d $SECONDARY_MOUNT_DIR ]; then
+ mkdir $SECONDARY_MOUNT_DIR
+fi  
+mount /dev/rootvg/varlv $SECONDARY_MOUNT_DIR
+secondary_mount_removal()
+ {
+  umount $SECONDARY_MOUNT_DIR
+ }
+################### TMPFS creation and removal ########################
+
+###################### Help Menu ##########################################
+if [ -z $1 ]; then
+ echo "(MSG 000): No arguments passed, continuing to regular task" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $TMPDIR/$LOGDIR/$LOGFILE
+else
+ if [ $1 == "-help" ]; then
+  echo "(MSG HELP): The script is intended for Automation of Var FS cleanup/maintinence"
+  exit 0;
+ fi
+fi
+###################### Help Menu ##########################################
+
+########################## Duplicate instance check ######################################
+CHECK_ID=""
+CHECK_ID=`ps -ef | grep "automation_var.sh" | grep -v grep | grep -v tail | wc -l`
+if [ $CHECK_ID -gt 4 ]; then
+ echo "(MSG 001 duplicate): Another intance of automation_var.sh is running on background, please check and terminate the first session" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $TMPDIR/$LOGDIR/$LOGFILE
+ if [ $PRIMARY_MAIL_ENABLE == 1 ]; then
+  echo "(MSG 001 duplicate): Another intance of automation_var.sh is running on background, please check and terminate the first session" | mailx -s "Alert on $ZONE Master Sudo Server" $PRIMARY_EMAIL
+ fi
+ if [ $SECONDARY_MAIL_ENABLE == 1 ]; then
+  echo "(MSG 001 duplicate): Another intance of automation_var.sh is running on background, please check and terminate the first session" | mailx -s "Alert on $ZONE Master Sudo Server" $SECONDARY_EMAIL
+ fi
+ exit 0;
+fi
+
+################### Resolution Functions ########################
+
+################################
+call_no_issue()
+{
+echo "server is not having issue"
+}
+################################
+var_avamar()
+{
+echo "/var/avamar is having issue"
+}
+################################
+var_log()
+{
+echo "/var/log is having issue"
+}
+################################
+var_sdam()
+{
+echo "/var/sadm is having issue"
+}
+################################
+var_spool()
+{
+echo "/var/spool is having issue"
+}
+################################
+var_tmp()
+{
+echo "/var/tmp is having issue"
+}
+################################
+
+################### Resolution Functions ########################
+
+################### Data Mining and analysis ########################
+
+###########################################
+VAR_CAPACITY=`df -hkPl $SECONDARY_MOUNT_DIR | grep -v Filesystem | awk '{print $5}' | cut -d "%" -f 1`
+if [ $VAR_CAPACITY -lt "83" ]; then
+ call_no_issue
+fi 
+###########################################
+VARSIZE=`df -hkPl $SECONDARY_MOUNT_DIR | grep -v /var/lib/docker | grep -v tmpfs | grep -v Filesystem | awk '{print $2}'`
+###########################################
+TOTAL_DISKSIZE=`df -hkPl | grep -v /var/lib/docker | grep -v tmpfs | grep -v Filesystem | awk '{print $2}' | paste -s -d+ - | bc`
+###########################################
+VAR_AVAMAR=`du -sk $SECONDARY_MOUNT_DIR/avamar | awk '{print $1}'`
+###########################################
+VAR_LOG=`du -sk $SECONDARY_MOUNT_DIR/log | awk '{print $1}'`
+###########################################
+VAR_SADM=`du -sk $SECONDARY_MOUNT_DIR/sadm | awk '{print $1}'`
+###########################################
+VAR_SPOOL=`du -sk $SECONDARY_MOUNT_DIR/spool | awk '{print $1}'`
+###########################################
+VAR_TMP=`du -sk $SECONDARY_MOUNT_DIR/tmp | awk '{print $1}'`
+###########################################
+EXPECTED_AVAMAR=`echo $(( TOTAL_DISKSIZE*2/100 ))`
+###########################################
+EXPECTED_VAR=`echo $(( VARSIZE - 2048000 ))`
+###########################################
+
+###########################################
+DIFF_VAR_AVAMAR=`echo $(( EXPECTED_VAR - VAR_AVAMAR ))`
+###########################################
+if [ $DIFF_VAR_AVAMAR -lt "1024000" ]; then
+ var_avamar
+fi 
+###########################################
+DIFF_VAR_LOG=`echo $(( EXPECTED_VAR - VAR_LOG ))`
+###########################################
+if [ $DIFF_VAR_LOG -lt "1024000" ]; then
+ var_spool
+fi
+########################################### 
+DIFF_VAR_SADM=`echo $(( EXPECTED_VAR - VAR_SADM ))`
+###########################################
+if [ $DIFF_VAR_SADM -lt "1024000" ]; then
+ var_sadm
+fi
+###########################################
+DIFF_VAR_SPOOL=`echo $(( EXPECTED_VAR - VAR_SPOOL ))`
+###########################################
+if [ $DIFF_VAR_SPOOL -lt "1024000" ]; then
+ var_spool
+fi
+###########################################
+DIFF_VAR_TMP=`echo $(( EXPECTED_VAR - VAR_TMP ))`
+###########################################
+if [ $DIFF_VAR_TMP -lt "1024000" ]; then
+ var_tmp
+fi
+###########################################
+
+################### Data Mining and analysis ########################
+
+####################### Post task ####################################
+tmpfs_removal
+secondary_mount_removal
+####################### Post task ####################################
+
+####################### End of script ####################################
+
+
+
+
+
+
+
+
+
+
