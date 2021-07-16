@@ -8,11 +8,11 @@
 # Revision
 
 ######################## Scope ######################
-# The script is intended to check the highly utilization of /var filesystem
+# The script is intended to check and resolve the highly utilized folders anf files of /var filesystem
 # 
 ######################## Scope ######################
 
-##################### User Defined Variables #########################
+##################### User Defined Variables 1 #########################
 ZONE=ALL
 PRIMARY_EMAIL=Tcs_Platform_Linux@lists.lilly.com
 SECONDARY_EMAIL=goswami_sushant@network.lilly.com
@@ -23,11 +23,34 @@ TMPDIR=/tmp/automation_var
 WORKDIR=work
 LOGDIR=log
 LOGFILE=Automation_var.log
+##################### User Defined Variables 2 #########################
+VAR_DIR=/var
+VAR_TMP_DIR=/var/tmp
+VAR_LOG_DIR=/var/log
+VAR_SADM_DIR=/var/sadm
+VAR_SPOOL_DIR=/var/spool
+VAR_AVAMAR_DIR=/var/avamar
+EXTENDABLE_VAR_SIZE=5120
 ############## Pre Fixed Variables ##############################
 CURRENTDATE=`date | awk '{print $3"-"$2"-"$6}'`
 CURRENTTIMESTAMP=`date | awk '{print $4}' | sed '$ s/:/./g'`
 CURRENT_HOUR=`date | awk '{print $4}' | cut -d ":" -f 1`
-
+CURRENT_HOSTNAME=`hostname`
+RHEL_KERNEL=`uname -r | cut -d "." -f 1,2,3`
+RHEL_VERSION=unknown
+if [ $RHEL_KERNEL = "2.6.18" ]; then
+ RHEL_VERSION=5
+fi
+if [ $RHEL_KERNEL = "2.6.32" ]; then
+ RHEL_VERSION=6
+fi
+RHEL_KERNEL=`uname -r | cut -d "." -f 1,2`
+if [ $RHEL_KERNEL = "3.10" ]; then
+ RHEL_VERSION=7
+fi
+if [ $RHEL_KERNEL = "4.18" ]; then
+ RHEL_VERSION=8
+fi
 #################### Do not edit below this line, use variables above ###########################################
 ###------------------------------------------------------------------------------------------------------------###
 
