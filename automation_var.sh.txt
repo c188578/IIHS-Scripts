@@ -30,7 +30,7 @@ VAR_LOG_DIR=/var/log
 VAR_SADM_DIR=/var/sadm
 VAR_SPOOL_DIR=/var/spool
 VAR_AVAMAR_DIR=/var/avamar
-EXTENDABLE_VAR_SIZE=5120
+EXTENDABLE_VAR_SIZE=5
 ############## Pre Fixed Variables ##############################
 CURRENTDATE=`date | awk '{print $3"-"$2"-"$6}'`
 CURRENTTIMESTAMP=`date | awk '{print $4}' | sed '$ s/:/./g'`
@@ -51,6 +51,8 @@ fi
 if [ $RHEL_KERNEL = "4.18" ]; then
  RHEL_VERSION=8
 fi
+ROOTVG_FREE=`vgs rootvg | tail -1 | awk '{print $7}' | cut -d "g" -f 1 | cut -d "<" -f 2 | cut -d "." -f 1`
+EXTENDABLE_VAR_SIZE_K=`echo $(( EXTENDABLE_VAR_SIZE*1024*1024 ))`
 #################### Do not edit below this line, use variables above ###########################################
 ###------------------------------------------------------------------------------------------------------------###
 
@@ -110,27 +112,34 @@ echo "server is not having issue"
 ################################
 var_avamar()
 {
-echo "/var/avamar is having issue"
+echo "$VAR_AVAMAR_DIR is having issue"
+if [ $ROOTVG_FREE -gt $EXTENDABLE_VAR_SIZE ]; then
+ if [ $EXPECTED_AVAMAR -gt $EXPECTED_VAR ]; then
+  DIFF_VAR_LOG=`echo $(( EXPECTED_AVAMAR - EXPECTED_VAR ))`
+   if [ $EXTENDABLE_VAR_SIZE_K -gt $DIFF_VAR_LOG ]; then
+    if [ $VARSIZE -lt "10485760" ] && [ $ROOTVG_FREE -gt $EXTENDABLE_VAR_SIZE ] && [ ; then
+ 
+  
 }
 ################################
 var_log()
 {
-echo "/var/log is having issue"
+echo "$VAR_LOG_DIR is having issue"
 }
 ################################
 var_sdam()
 {
-echo "/var/sadm is having issue"
+echo "$VAR_SADM_DIR is having issue"
 }
 ################################
 var_spool()
 {
-echo "/var/spool is having issue"
+echo "$VAR_SPOOL_DIR is having issue"
 }
 ################################
 var_tmp()
 {
-echo "/var/tmp is having issue"
+echo "$VAR_TMP_DIR is having issue"
 }
 ################################
 
@@ -146,7 +155,7 @@ fi
 ###########################################
 VARSIZE=`df -hkPl $SECONDARY_MOUNT_DIR | grep -v /var/lib/docker | grep -v tmpfs | grep -v Filesystem | awk '{print $2}'`
 ###########################################
-TOTAL_DISKSIZE=`df -hkPl | grep -v /var/lib/docker | grep -v tmpfs | grep -v Filesystem | awk '{print $2}' | paste -s -d+ - | bc`
+TOTAL_DISKSIZE=`df -hkPl | grep -v /var/lib/docker | grep -v tmpfs | grep -v oracle | grep -v Filesystem | awk '{print $2}' | paste -s -d+ - | bc`
 ###########################################
 VAR_AVAMAR=`du -sk $SECONDARY_MOUNT_DIR/avamar | awk '{print $1}'`
 ###########################################
