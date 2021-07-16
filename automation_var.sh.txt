@@ -106,6 +106,7 @@ fi
 
 ################################
 extend_var()
+{
 if [ $RHEL_VERSION == "6" ]; then
  lvextend -L 10g /dev/rootvg/rootlv
  resize2fs /dev/rootvg/rootlv
@@ -118,6 +119,7 @@ if [ $RHEL_VERSION == "8" ]; then
  lvextend -L 10g /dev/rootvg/rootlv
  xfs_growfs /var
 fi
+}
 ################################
 call_no_issue()
 {
