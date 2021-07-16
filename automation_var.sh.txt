@@ -105,6 +105,20 @@ fi
 ################### Resolution Functions ########################
 
 ################################
+extend_var()
+if [ $RHEL_VERSION == "6" ]; then
+ lvextend -L 10g /dev/rootvg/rootlv
+ resize2fs /dev/rootvg/rootlv
+fi
+if [ $RHEL_VERSION == "7" ]; then
+ lvextend -L 10g /dev/rootvg/rootlv
+ xfs_growfs /var
+fi
+if [ $RHEL_VERSION == "8" ]; then
+ lvextend -L 10g /dev/rootvg/rootlv
+ xfs_growfs /var
+fi
+################################
 call_no_issue()
 {
 echo "server is not having issue"
@@ -117,9 +131,12 @@ if [ $ROOTVG_FREE -gt $EXTENDABLE_VAR_SIZE ]; then
  if [ $EXPECTED_AVAMAR -gt $EXPECTED_VAR ]; then
   DIFF_VAR_LOG=`echo $(( EXPECTED_AVAMAR - EXPECTED_VAR ))`
    if [ $EXTENDABLE_VAR_SIZE_K -gt $DIFF_VAR_LOG ]; then
-    if [ $VARSIZE -lt "10485760" ] && [ $ROOTVG_FREE -gt $EXTENDABLE_VAR_SIZE ] && [ ; then
- 
-  
+    if [ $VARSIZE -lt "10485760" ] && [ $ROOTVG_FREE -gt $EXTENDABLE_VAR_SIZE ]; then
+     extend_var
+    fi
+   fi 
+  fi
+ fi 
 }
 ################################
 var_log()
