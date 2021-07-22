@@ -1,21 +1,14 @@
 #!/bin/bash
-############# Name : updsudo_shadow ###############
-#################### Version ######################
-# version 0.01 written by Sushant Goswami Dated 17-Aug-2017
-# Revision 0.02 written by Alok Ranjan Dated 24-Oct-2017
+############# Name : namp_integrity_check.sh ###############
+#################### Version_number 0.01 ######################
+# version 0.01 written by Sushant Goswami Dated 22-July-2021
+# Revision
 # Revision
 # Revision
 # Revision
 ######################## Scope ######################
-# The script is intended to check the master sudoers file on regular interval.
-# ideally it can be set through the crontab
-# 1. If the main file and the file before UPDSUDO_HOUR_CHECK hours are having difference by more than SIZE_LIMIT Bytes than it will trigger email.
-# 2. If there is a "vi" session opened for more than UPDSUDO_HOUR_CHECK hour than it will trigger email.
-# 3. If the file is modified then the modification will be sent to PRIMARY_EMAIL
-# the modification email will be sent only to PRIMARY_EMAIL
-# 4. the script will maintain a log file which is set by LOGDIR and LOGFILE variable
-# 5. Script will keep modified sudo file backup for 3 days
-# 6. Script also keep backup of sudo file every 2 hour and for 3 days
+# The script is intended to check the namp database integrity with active directory database
+# scrip is needed to run via cron on specific interval
 ##################### User Defined Variables #########################
 ZONE=ALL
 PRIMARY_EMAIL=Tcs_Platform_Linux@lists.lilly.com
