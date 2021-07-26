@@ -33,7 +33,15 @@ else
 fi
 #################### Do not edit below this line, use variables above ###########################################
 ###------------------------------------------------------------------------------------------------------------###
-
+mail_send()
+{
+ if [ $SECONDARY_MAIL_ENABLE == 1 ]; then
+  echo "$MAIL_MESSAGE" | mailx -s "Alert on $ZONE Master Sudo Server" $SECONDARY_EMAIL
+ fi
+ if [ $PRIMARY_MAIL_ENABLE == 1 ]; then
+  echo "$MAIL_MESSAGE" | mailx -s "Alert on $ZONE Master Sudo Server" $PRIMARY_EMAIL
+ fi
+}
 ########################## Duplicate instance check ######################################
 CHECK_ID=""
 CHECK_ID=`ps -ef | grep "namp_integrity_check" | grep -v grep | grep -v tail | wc -l`
@@ -75,5 +83,22 @@ while read i;
     fi
    fi
  done < $WORKDIR/$TEMPDIR/namp_integrity_check-nampuid-$CURRENTDATE.txt
+ 
+ while read i;
+ do
+  a=`echo "$i" | awk '{print $1}'`
+  b=`echo "$i" | awk '{print $2}'`
+  c=`grep -i "$a " $WORKDIR/$TEMPDIR/namp_integrity_check-nampuid-$CURRENTDATE.txt | wc -l`
+   if [ $c -gt 1 ]; then
+     echo "(MSG 004): more than two records found in NAMP for user $a in AD" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+   fi
+   if [ $c == 1 ]; then
+    d=`grep -i "$a " $WORKDIR/$TEMPDIR/namp_integrity_check-nampuid-$CURRENTDATE.txt | awk '{print $1}'`
+    e=`grep -i "$a " $WORKDIR/$TEMPDIR/namp_integrity_check-nampuid-$CURRENTDATE.txt | awk '{print $2}'`
+    if [ $b != $e ]; then
+     echo "(MSG 004): Mismatch for user $a with uid $b in AD with id $e in NAMP" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+    fi
+   fi
+ done < $WORKDIR/$TEMPDIR/namp_integrity_check-aduid-$CURRENTDATE.txt
 
 ########################## Main code #####################################
