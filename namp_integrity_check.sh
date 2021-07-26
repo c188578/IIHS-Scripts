@@ -47,12 +47,8 @@ CHECK_ID=""
 CHECK_ID=`ps -ef | grep "namp_integrity_check" | grep -v grep | grep -v tail | wc -l`
 if [ $CHECK_ID -gt 4 ]; then
  echo "(MSG 002): Another intance of updsudo_shadow is running on background, please check and terminate the first session" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
- if [ $SECONDARY_MAIL_ENABLE == 1 ]; then
-  echo "(MSG 002): Another intance of updsudo_shadow is running on background, please check and terminate the first session" | mailx -s "Alert on $ZONE Master Sudo Server" $SECONDARY_EMAIL
- fi
- if [ $PRIMARY_MAIL_ENABLE == 1 ]; then
-  echo "(MSG 002): Another intance of updsudo_shadow is running on background, please check and terminate the first session" | mailx -s "Alert on $ZONE Master Sudo Server" $PRIMARY_EMAIL
- fi
+ MAIL_MESSAGE="(MSG 002): Another instance of namp_integrity_check is running on background, please check and terminate the first session"
+ mail_send
  exit 0;
 fi
 ########################## Duplicate instance check ######################################
