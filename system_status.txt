@@ -1,87 +1,155 @@
 #!/bin/bash
-############# Name : system_status.sh ###############
-#################### Version ######################
-# version 0.01 written by Sushant Goswami Dated 25-apr-2018
+############# Name : namp_integrity_check.sh ###############
+#################### Version_number 0.01 ######################
+# version 0.01 written by Sushant Goswami Dated 22-July-2021
 # Revision
 # Revision
 # Revision
 # Revision
 ######################## Scope ######################
-# The script is intended to check top 5 cpu and memory process, it also monitors the ram utilisation, it is needed to be set by cron
-# example */5 * * * * /opt/system_status.sh
+# The script is intended to check the namp database integrity with active directory database
+# scrip is needed to run via cron on specific interval
 ##################### User Defined Variables #########################
-ZONE=ALL_ZONE
-PRIMARY_EMAIL=goswami_sushant@network.lilly.com
-SECONDARY_EMAIL=karthick_manivannan@network.lilly.com
+ZONE=ALL
+PRIMARY_EMAIL=Tcs_Platform_Linux@lists.lilly.com
+SECONDARY_EMAIL=goswami_sushant@network.lilly.com
 PRIMARY_MAIL_ENABLE=1
 SECONDARY_MAIL_ENABLE=1
-WORKDIR=/tmp
+WORKDIR=/var
 LOGDIR=log
-LOGFILE=system_status.log
+LOGFILE=namp_integrity_check_log.txt
+TEMPDIR=tmp
 ############## Pre Fixed Variables ##############################
-SERVER_NAME=`hostname`
 CURRENTDATE=`date | awk '{print $3"-"$2"-"$6}'`
 CURRENTTIMESTAMP=`date | awk '{print $4}' | sed '$ s/:/./g'`
-CURRENT_HOUR=`date | awk '{print $4}' | awk -F ":" '{print $1$2}'`
+SERVER_NAME=`hostname`
+DOMAIN_NAME=am.lilly.com
 ###################### Help Menu ##########################################
 if [ -z $1 ]; then
- echo "(MSG 000): No arguments passed, continuing to regular task" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-$CURRENTDATE.txt
+ echo "(MSG 000): No arguments passed, continuing to regular task" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
 else
  if [ $1 == "-help" ]; then
-  echo "(MSG HELP): The script is intended to check top 5 cpu and memory process, it also monitors the ram utilisation, it is needed to be set by cron"
+  echo "(MSG 001 HELP): The script is intended to check the namp database integrity with active directory database, it is needed to set it by cron"
   exit 0;
  fi
 fi
-##########################################################################
-DUPLICATE_INSTANCE=2
-DUPLICATE_INSTANCE=`ps -ef | grep system_status.sh | grep -v grep | wc -l`
-if [ $DUPLICATE_INSTANCE -ge 3 ]; then
- echo "(MSG 000): Duplicate instance found, .. exiting." | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-$CURRENTDATE.txt
+#################### Do not edit below this line, use variables above ###########################################
+###------------------------------------------------------------------------------------------------------------###
+mail_send()
+{
+ if [ $SECONDARY_MAIL_ENABLE == 1 ]; then
+  echo "$MAIL_MESSAGE" | mailx -s "Alert on $ZONE Master Sudo Server" $SECONDARY_EMAIL
+ fi
+ if [ $PRIMARY_MAIL_ENABLE == 1 ]; then
+  echo "$MAIL_MESSAGE" | mailx -s "Alert on $ZONE Master Sudo Server" $PRIMARY_EMAIL
+ fi
+}
+########################## Duplicate instance check ######################################
+CHECK_ID=""
+CHECK_ID=`ps -ef | grep "namp_integrity_check" | grep -v grep | grep -v tail | wc -l`
+if [ $CHECK_ID -gt 4 ]; then
+ echo "(MSG 002): Another intance of updsudo_shadow is running on background, please check and terminate the first session" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+ MAIL_MESSAGE="(MSG 002): Another instance of namp_integrity_check is running on background, please check and terminate the first session"
+ mail_send
  exit 0;
 fi
-#################### Do not edit below this line, use variables above ###########################################
-if [ ! -d /$WORKDIR/$LOGDIR ]; then
-mkdir -p /$WORKDIR/$LOGDIR
-fi
-####################
-echo "=================================================================================================================" >> $WORKDIR/$LOGDIR/$LOGFILE-top10cpu-$CURRENTDATE.txt
-echo "(MSG 001): Below top 10 CPU process" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-top10cpu-$CURRENTDATE.txt
-echo "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-top10cpu-$CURRENTDATE.txt
-ps aux | sort -k 3 -rn | head -10 | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-top10cpu-$CURRENTDATE.txt
+########################## Duplicate instance check ######################################
 
-echo "=================================================================================================================" >> $WORKDIR/$LOGDIR/$LOGFILE-top10mem-$CURRENTDATE.txt
-echo "(MSG 002): Below top 10 MEMORY process" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-top10mem-$CURRENTDATE.txt
-echo "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-top10mem-$CURRENTDATE.txt
-ps aux | sort -k 4 -rn | head -10 | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-top10mem-$CURRENTDATE.txt
+########################## Main code #####################################
+/remote/bin/namp/db/listuid > $WORKDIR/$TEMPDIR/tmp_nampuidlist01.txt
+echo -e "$(sed '1d' $WORKDIR/$TEMPDIR/tmp_nampuidlist01.txt )\n" > $WORKDIR/$TEMPDIR/tmp_nampuidlist02.txt
+awk '{print "     " $0}' $WORKDIR/$TEMPDIR/tmp_nampuidlist02.txt > $WORKDIR/$TEMPDIR/tmp_nampuidlist03.txt
+tr '[A-Z]' '[a-z]' < $WORKDIR/$TEMPDIR/tmp_nampuidlist03.txt > $WORKDIR/$TEMPDIR/namp_integrity_check-nampuid-$CURRENTDATE.txt
+rm -rf $WORKDIR/$TEMPDIR/tmp_nampuidlist01.txt $WORKDIR/$TEMPDIR/tmp_nampuidlist02.txt $WORKDIR/$TEMPDIR/tmp_nampuidlist03.txt
 
-echo "=================================================================================================================" >> $WORKDIR/$LOGDIR/$LOGFILE-memstat-$CURRENTDATE.txt
-echo "(MSG 003): Below is free command output" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-memstat-$CURRENTDATE.txt
-free | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-memstat-$CURRENTDATE.txt
+adquery user | awk -F'[:=]' '{print "  " $1 "\t" "  " $3}' > $WORKDIR/$TEMPDIR/tmp_aduidlist01.txt
+tr '[A-Z]' '[a-z]' < $WORKDIR/$TEMPDIR/tmp_aduidlist01.txt > $WORKDIR/$TEMPDIR/namp_integrity_check-aduid-$CURRENTDATE.txt
+rm -rf $WORKDIR/$TEMPDIR/tmp_aduidlist01.txt
 
-echo "=================================================================================================================" >> $WORKDIR/$LOGDIR/$LOGFILE-dstate-$CURRENTDATE.txt
-echo "(MSG 003): Below is the Fetched D state processes" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-dstate-$CURRENTDATE.txt
-ps aux | grep " D " | grep -v grep | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-dstate-$CURRENTDATE.txt
+/remote/bin/namp/db/listgid > $WORKDIR/$TEMPDIR/tmp_nampgidlist01.txt
+echo -e "$(sed '1d' $WORKDIR/$TEMPDIR/tmp_nampgidlist01.txt )\n" > $WORKDIR/$TEMPDIR/tmp_nampgidlist02.txt
+awk '{print "     " $0}' $WORKDIR/$TEMPDIR/tmp_nampgidlist02.txt > $WORKDIR/$TEMPDIR/tmp_nampgidlist03.txt
+tr '[A-Z]' '[a-z]' < $WORKDIR/$TEMPDIR/tmp_nampgidlist03.txt > $WORKDIR/$TEMPDIR/namp_integrity_check-nampgid-$CURRENTDATE.txt
+rm -rf $WORKDIR/$TEMPDIR/tmp_nampgidlist01.txt $WORKDIR/$TEMPDIR/tmp_nampgidlist02.txt $WORKDIR/$TEMPDIR/tmp_nampgidlist03.txt
 
-echo "=================================================================================================================" >> $WORKDIR/$LOGDIR/$LOGFILE-vmstat-$CURRENTDATE.txt
-echo "(MSG 004): Below is the Fetched vmstat status" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-vmstat-$CURRENTDATE.txt
-vmstat 1 5 | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-vmstat-$CURRENTDATE.txt
-echo "=================================================================================================================" >> $WORKDIR/$LOGDIR/$LOGFILE-vmstat-$CURRENTDATE.txt
+adquery group | awk -F'[:=]' '{print "  " $1 "\t" "  " $3}' > $WORKDIR/$TEMPDIR/tmp_adgidlist01.txt
+tr '[A-Z]' '[a-z]' < $WORKDIR/$TEMPDIR/tmp_adgidlist01.txt > $WORKDIR/$TEMPDIR/namp_integrity_check-adgid-$CURRENTDATE.txt
+rm -rf $WORKDIR/$TEMPDIR/tmp_adgidlist01.txt
 
-echo "(MSG 005): Below is the io status" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-io-$CURRENTDATE.txt
-iotop -b | head -n 15  | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-io-$CURRENTDATE.txt
-echo "=================================================================================================================" >> $WORKDIR/$LOGDIR/$LOGFILE-io-$CURRENTDATE.txt
+########################## in Main code ## finding duplicates ##################################
 
-echo "(MSG 006): Below is the process count for users" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-process-count-$CURRENTDATE.txt
-ps -elfT | awk '{print $3}'  | sort | uniq -c | awk '{print $2, " ", $1}'  | column -t  | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE-process-count-$CURRENTDATE.txt
-echo "=================================================================================================================" >> $WORKDIR/$LOGDIR/$LOGFILE-process-count-$CURRENTDATE.txt
-#################### Mailing report ####################
-if [ $CURRENT_HOUR -gt 2354 ]; then
-if [ $PRIMARY_MAIL_ENABLE == 1 ]; then
- echo "Performance report on $SERVER_NAME" | mailx -s "Performance report on $SERVER_NAME" -r reporter@$SERVER_NAME.am.lilly.com -a $WORKDIR/$LOGDIR/$LOGFILE-top10cpu-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-top10mem-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-memstat-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-dstate-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-vmstat-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-process-count-$CURRENTDATE.txt $PRIMARY_EMAIL
-fi
+while read i;
+ do
+  a=`echo "$i" | awk '{print $1}'`
+  b=`echo "$i" | awk '{print $2}'`
+  c=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-aduid-$CURRENTDATE.txt | wc -l`
+   if [ $c -gt 1 ]; then
+     echo "(MSG 003): more than two records found in AD for user $a in NAMP DATABASE" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+   fi
+   if [ $c == 1 ]; then
+    d=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-aduid-$CURRENTDATE.txt | awk '{print $1}'`
+    e=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-aduid-$CURRENTDATE.txt | awk '{print $2}'`
+    if [ $b != $e ]; then
+     echo "(MSG 004): Mismatch for user $a with uid $b in NAMP with id $e in AD DATABASE" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+    fi
+   fi
+ done < $WORKDIR/$TEMPDIR/namp_integrity_check-nampuid-$CURRENTDATE.txt
+
+ while read i;
+ do
+  a=`echo "$i" | awk '{print $1}'`
+  b=`echo "$i" | awk '{print $2}'`
+  c=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-nampuid-$CURRENTDATE.txt | wc -l`
+   if [ $c -gt 1 ]; then
+     echo "(MSG 005): more than two records found in NAMP for user $a in AD DATABASE" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+   fi
+   if [ $c == 1 ]; then
+    d=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-nampuid-$CURRENTDATE.txt | awk '{print $1}'`
+    e=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-nampuid-$CURRENTDATE.txt | awk '{print $2}'`
+    if [ $b != $e ]; then
+     echo "(MSG 006): Mismatch for user $a with uid $b in AD with id $e in NAMP DATABASE" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+    fi
+   fi
+ done < $WORKDIR/$TEMPDIR/namp_integrity_check-aduid-$CURRENTDATE.txt
+
+while read i;
+ do
+  a=`echo "$i" | awk '{print $1}'`
+  b=`echo "$i" | awk '{print $2}'`
+  c=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-adgid-$CURRENTDATE.txt | wc -l`
+   if [ $c -gt 1 ]; then
+     echo "(MSG 007): more than two records found in AD for group $a in NAMP DATABASE" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+   fi
+   if [ $c == 1 ]; then
+    d=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-adgid-$CURRENTDATE.txt | awk '{print $1}'`
+    e=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-adgid-$CURRENTDATE.txt | awk '{print $2}'`
+    if [ $b != $e ]; then
+     echo "(MSG 008): Mismatch for group $a with gid $b in NAMP with id $e in AD DATABASE" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+    fi
+   fi
+ done < $WORKDIR/$TEMPDIR/namp_integrity_check-nampgid-$CURRENTDATE.txt
+
+ while read i;
+ do
+  a=`echo "$i" | awk '{print $1}'`
+  b=`echo "$i" | awk '{print $2}'`
+  c=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-nampgid-$CURRENTDATE.txt | wc -l`
+   if [ $c -gt 1 ]; then
+     echo "(MSG 009): more than two records found in NAMP for group $a in AD DATABASE" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+   fi
+   if [ $c == 1 ]; then
+    d=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-nampgid-$CURRENTDATE.txt | awk '{print $1}'`
+    e=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-nampgid-$CURRENTDATE.txt | awk '{print $2}'`
+    if [ $b != $e ]; then
+     echo "(MSG 010): Mismatch for group $a with gid $b in AD with id $e in NAMP DATABASE" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+    fi
+   fi
+ done < $WORKDIR/$TEMPDIR/namp_integrity_check-adgid-$CURRENTDATE.txt
+
 if [ $SECONDARY_MAIL_ENABLE == 1 ]; then
- echo "Performance report on $SERVER_NAME" | mailx -s "Performance report on $SERVER_NAME" -r reporter@$SERVER_NAME.am.lilly.com -a $WORKDIR/$LOGDIR/$LOGFILE-top10cpu-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-top10mem-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-memstat-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-dstate-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-vmstat-$CURRENTDATE.txt -a $WORKDIR/$LOGDIR/$LOGFILE-process-count-$CURRENTDATE.txt  $SECONDARY_EMAIL
+echo "NAMP integrity check sript log file is attached on dated $CURRENTDATE" | mailx -s "NAMP integrity check sript log file" -a $WORKDIR/$LOGDIR/$LOGFILE -r namp_integrity_checker@$SERVER_NAME.$DOMAIN_NAME $SECONDARY_EMAIL
 fi
-rm -rf $WORKDIR/$LOGDIR/$LOGFILE-top10cpu-$CURRENTDATE.txt $WORKDIR/$LOGDIR/$LOGFILE-top10mem-$CURRENTDATE.txt $WORKDIR/$LOGDIR/$LOGFILE-memstat-$CURRENTDATE.txt $WORKDIR/$LOGDIR/$LOGFILE-dstate-$CURRENTDATE.txt $WORKDIR/$LOGDIR/$LOGFILE-vmstat-$CURRENTDATE.txt $WORKDIR/$LOGDIR/$LOGFILE-process-count-$CURRENTDATE.txt $WORKDIR/$LOGDIR/$LOGFILE-io-$CURRENTDATE.txt $WORKDIR/$LOGDIR/$LOGFILE-$CURRENTDATE.txt
-fi
-#################### Do not edit above this line, use variables above in User Defined Variables ###########################################
+
+cp $WORKDIR/$LOGDIR/$LOGFILE $WORKDIR/$LOGDIR/$CURRENTTIMESTAMP-$LOGFILE
+rm -rf $WORKDIR/$LOGDIR/$LOGFILE
+########################## Main code #####################################
