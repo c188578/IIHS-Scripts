@@ -67,6 +67,17 @@ adquery user | awk -F'[:=]' '{print $1 "\t" $3}' > $WORKDIR/$TEMPDIR/tmp_aduidli
 tr '[A-Z]' '[a-z]' < $WORKDIR/$TEMPDIR/tmp_aduidlist01.txt > $WORKDIR/$TEMPDIR/namp_integrity_check-aduid-$CURRENTDATE.txt
 rm -rf $WORKDIR/$TEMPDIR/tmp_aduidlist01.txt
 
+/remote/bin/namp/db/listgid > $WORKDIR/$TEMPDIR/tmp_nampgidlist01.txt
+echo -e "$(sed '1d' $WORKDIR/$TEMPDIR/tmp_nampgidlist01.txt )\n" > $WORKDIR/$TEMPDIR/tmp_nampgidlist02.txt
+tr '[A-Z]' '[a-z]' < $WORKDIR/$TEMPDIR/tmp_nampgidlist02.txt > $WORKDIR/$TEMPDIR/namp_integrity_check-nampgid-$CURRENTDATE.txt
+rm -rf $WORKDIR/$TEMPDIR/tmp_nampgidlist01.txt $WORKDIR/$TEMPDIR/tmp_nampgidlist02.txt
+
+adquery group | awk -F'[:=]' '{print $1 "\t" $3}' > $WORKDIR/$TEMPDIR/tmp_adgidlist01.txt
+tr '[A-Z]' '[a-z]' < $WORKDIR/$TEMPDIR/tmp_adgidlist01.txt > $WORKDIR/$TEMPDIR/namp_integrity_check-adgid-$CURRENTDATE.txt
+rm -rf $WORKDIR/$TEMPDIR/tmp_adgidlist01.txt
+
+########################## in Main code ## finding duplicates ##################################
+
 while read i;
  do
   a=`echo "$i" | awk '{print $1}'`
