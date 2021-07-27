@@ -153,10 +153,10 @@ while read i;
  done < $WORKDIR/$TEMPDIR/namp_integrity_check-adgid-$CURRENTDATE.txt
 
 if [ $SECONDARY_MAIL_ENABLE == 1 ]; then
-echo "NAMP integrity check script log file is attached on dated $CURRENTDATE" | mailx -s "NAMP integrity check sript log file" -a $WORKDIR/$LOGDIR/$LOGFILE -r namp_integrity_checker@$SERVER_NAME.$DOMAIN_NAME $SECONDARY_EMAIL
+echo "NAMP integrity check script log file is attached on dated $CURRENTDATE" | mailx -s "NAMP integrity check script log file" -a $WORKDIR/$LOGDIR/$LOGFILE -r namp_integrity_checker@$SERVER_NAME.$DOMAIN_NAME $SECONDARY_EMAIL
 fi
 if [ $PRIMARY_MAIL_ENABLE == 1 ]; then
-echo "NAMP integrity check script log file is attached on dated $CURRENTDATE" | mailx -s "NAMP integrity check sript log file" -a $WORKDIR/$LOGDIR/$LOGFILE -r namp_integrity_checker@$SERVER_NAME.$DOMAIN_NAME $PRIMARY_EMAIL
+echo "NAMP integrity check script log file is attached on dated $CURRENTDATE" | mailx -s "NAMP integrity check script log file" -a $WORKDIR/$LOGDIR/$LOGFILE -r namp_integrity_checker@$SERVER_NAME.$DOMAIN_NAME $PRIMARY_EMAIL
 fi
 
 cp $WORKDIR/$LOGDIR/$LOGFILE $WORKDIR/$LOGDIR/$CURRENTTIMESTAMP-$LOGFILE
