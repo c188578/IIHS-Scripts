@@ -13,7 +13,7 @@
 ZONE=ALL
 PRIMARY_EMAIL=Tcs_Platform_Linux@lists.lilly.com
 SECONDARY_EMAIL=goswami_sushant@network.lilly.com
-PRIMARY_MAIL_ENABLE=0
+PRIMARY_MAIL_ENABLE=1
 SECONDARY_MAIL_ENABLE=1
 WORKDIR=/var
 LOGDIR=log
@@ -24,6 +24,7 @@ CURRENTDATE=`date | awk '{print $3"-"$2"-"$6}'`
 CURRENTTIMESTAMP=`date | awk '{print $4}' | sed '$ s/:/./g'`
 SERVER_NAME=`hostname`
 DOMAIN_NAME=am.lilly.com
+PATH=$PATH:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 ###################### Help Menu ##########################################
 if [ -z $1 ]; then
  echo "(MSG 000): No arguments passed, continuing to regular task" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
@@ -80,12 +81,14 @@ while read i;
   b=`echo "$i" | awk '{print $2}'`
   c=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-aduid-$CURRENTDATE.txt | wc -l`
    if [ $c -gt 1 ]; then
+     echo "--------------------------------------------------------------------------" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
      echo "(MSG 003): more than two records found in AD for user $a in NAMP DATABASE" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
    fi
    if [ $c == 1 ]; then
     d=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-aduid-$CURRENTDATE.txt | awk '{print $1}'`
     e=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-aduid-$CURRENTDATE.txt | awk '{print $2}'`
     if [ $b != $e ]; then
+     echo "--------------------------------------------------------------------------" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
      echo "(MSG 004): Mismatch for user $a with uid $b in NAMP with id $e in AD DATABASE" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
     fi
    fi
@@ -99,7 +102,7 @@ while read i;
    if [ $c -gt 1 ]; then
      echo "--------------------------------------------------------------------------" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
      echo "(MSG 005): more than two records found in NAMP DB for user $a in respect with AD" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
-     cat $WORKDIR/$TEMPDIR/tmp_nampuidlist03.txt | grep -i $a | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4" In-the-NAMP "}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+     cat $WORKDIR/$TEMPDIR/tmp_nampuidlist03.txt | grep -i " $a " | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4" In-the-NAMP "}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
    fi
    if [ $c == 1 ]; then
     d=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-nampuid-$CURRENTDATE.txt | awk '{print $1}'`
@@ -107,8 +110,8 @@ while read i;
     if [ $b != $e ]; then
      echo "--------------------------------------------------------------------------" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
      echo "(MSG 006): Mismatch for user $a with uid $b in AD with id $e in NAMP DATABASE" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
-     cat $WORKDIR/$TEMPDIR/tmp_nampuidlist03.txt | grep -i $a | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4" In-the-NAMP "}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
-     cat $WORKDIR/$TEMPDIR/tmp_aduidlist01.txt | grep -i $a | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4" In-the-AD "}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+     cat $WORKDIR/$TEMPDIR/tmp_nampuidlist03.txt | grep -i " $a " | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4" In-the-NAMP "}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+     cat $WORKDIR/$TEMPDIR/tmp_aduidlist01.txt | grep -i " $a" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4" In-the-AD "}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
     fi
    fi
  done < $WORKDIR/$TEMPDIR/namp_integrity_check-aduid-$CURRENTDATE.txt
@@ -119,12 +122,14 @@ while read i;
   b=`echo "$i" | awk '{print $2}'`
   c=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-adgid-$CURRENTDATE.txt | wc -l`
    if [ $c -gt 1 ]; then
+     echo "--------------------------------------------------------------------------" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
      echo "(MSG 007): more than two records found in AD for group $a in NAMP DATABASE" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
    fi
    if [ $c == 1 ]; then
     d=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-adgid-$CURRENTDATE.txt | awk '{print $1}'`
     e=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-adgid-$CURRENTDATE.txt | awk '{print $2}'`
     if [ $b != $e ]; then
+     echo "--------------------------------------------------------------------------" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
      echo "(MSG 008): Mismatch for group $a with gid $b in NAMP with id $e in AD DATABASE" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
     fi
    fi
@@ -138,7 +143,7 @@ while read i;
    if [ $c -gt 1 ]; then
      echo "--------------------------------------------------------------------------" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
      echo "(MSG 009): more than two records found in NAMP for group $a in AD DATABASE" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
-     cat $WORKDIR/$TEMPDIR/tmp_nampgidlist03.txt | grep -i $a | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4" In the NAMP "}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+     cat $WORKDIR/$TEMPDIR/tmp_nampgidlist03.txt | grep -i " $a " | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4" In the NAMP "}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
    fi
    if [ $c == 1 ]; then
     d=`grep -i " $a " $WORKDIR/$TEMPDIR/namp_integrity_check-nampgid-$CURRENTDATE.txt | awk '{print $1}'`
@@ -146,8 +151,8 @@ while read i;
     if [ $b != $e ]; then
      echo "--------------------------------------------------------------------------" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
      echo "(MSG 010): Mismatch for group $a with gid $b in AD with id $e in NAMP DATABASE" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
-     cat $WORKDIR/$TEMPDIR/tmp_nampgidlist03.txt | grep -i $a | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4" In-the-NAMP "}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
-     cat $WORKDIR/$TEMPDIR/tmp_adgidlist01.txt | grep -i $a | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4" In-the-AD "}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+     cat $WORKDIR/$TEMPDIR/tmp_nampgidlist03.txt | grep -i " $a " | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4" In-the-NAMP "}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
+     cat $WORKDIR/$TEMPDIR/tmp_adgidlist01.txt | grep -i " $a" | sed -e "s/^/$(date | awk '{print $3"-"$2"-"$6"-"$4" In-the-AD "}') /" >> $WORKDIR/$LOGDIR/$LOGFILE
     fi
    fi
  done < $WORKDIR/$TEMPDIR/namp_integrity_check-adgid-$CURRENTDATE.txt
