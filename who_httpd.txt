@@ -1,0 +1,31 @@
+#!/bin/sh
+#-------------------------------------------------------------------------------
+#- Original Author...: Sushant Goswami
+#- Creation Date.....: 17 Jan 2019
+#- Purpose...........: For starting WHO httpd services	
+#-------------------------------------------------------------------------------
+#-            (C) Copyright 2018 Eli Lilly and Company
+#-                       All Rights Reserved
+#-------------------------------------------------------------------------------
+#- The next two lines are used by the chkconfig utility on Linux systems, and
+#- are ignored on Sun systems.
+# chkconfig: 35 50 01
+# description: who_httpd
+                                                                                          
+                                                             
+case "$1" in
+  start)
+    echo "Starting who_httpd"
+    /opt/WHO/software/httpd24/sbin/httpd -f /opt/WHO/software/httpd24/conf/httpd.conf
+    ;;
+  stop)
+    echo "Starting who_httpd"
+    kill -9 `ps -ef | grep httpd | grep -v grep | awk '{print $2}'`
+    ;;
+  *)
+    echo "Usage: httpd server WHO script {start|stop}"
+    exit 1
+esac
+                                                                                              
+exit 0
+
