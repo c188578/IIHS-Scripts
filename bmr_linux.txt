@@ -10,25 +10,14 @@
 ##################### User Defined Variables #########################
 ZONE=ALL
 PRIMARY_EMAIL=Tcs_Platform_Linux@lists.lilly.com
-SECONDARY_EMAIL=ranjan_alok@network.lilly.com
+SECONDARY_EMAIL=goswami_sushant@network.lilly.com
 PRIMARY_MAIL_ENABLE=1
 SECONDARY_MAIL_ENABLE=1
-SIZE_LIMIT=512
 WORKDIR=/etc/msudoers/updsudo_shadow
-UPDSUDO_WORKDIR=/etc/msudoers
-AUTO_BACKUP_DIR=backup
-SUDO_FILE=master.sudoers
 LOGDIR=log
 LOGFILE=updsudo_shadow.log
 TEMPDIR=tmp
-CHANGE_DIR=changes
-UPDSUDO_HOUR_CHECK=01
 ############## Pre Fixed Variables ##############################
 CURRENTDATE=`date | awk '{print $3"-"$2"-"$6}'`
 CURRENTTIMESTAMP=`date | awk '{print $4}' | sed '$ s/:/./g'`
-LAST_FILE_DATE=""
-LAST_FILE_HOUR=""
-LAST_FILE_DATE=`ls -ltr $WORKDIR/$AUTO_BACKUP_DIR | tail -1 | awk '{print $9}' | cut -d "-" -f 2,3,4`
-LAST_FILE_HOUR=`ls -ltr $WORKDIR/$AUTO_BACKUP_DIR | tail -1 | awk '{print $9}' | cut -d "-" -f 5 | cut -d "." -f 1`
-CURRENT_HOUR=`date | awk '{print $4}' | cut -d ":" -f 1`
-COPY_FLAG=0
+
